@@ -15,6 +15,10 @@ export class ProductModel {
     return this.products;
   }
 
+  getProductById(id: string) {
+    return this.products.find(p => p.id === id);
+  }
+
   selectProduct(id: string) {
     this.selectedProduct = this.products.find(p => p.id === id) || null;
     this.events.emit('product:selected', this.selectedProduct);

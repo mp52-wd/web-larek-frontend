@@ -1,37 +1,45 @@
-import type { IOrder, IOrderFormStep1, IOrderFormStep2, PaymentType } from '../../types';
+import type { IOrderForm, IOrderFormStep1, IOrderFormStep2, PaymentType } from '../../types';
 import { EventEmitter } from '../base/events';
 
 export class OrderModel {
-  private data: IOrder = {
-    payment: 'online',
-    address: '',
-    email: '',
-    phone: '',
-    items: []
-  };
-  constructor(private events: EventEmitter) {}
+	private data: IOrderForm = {
+		payment: 'online',
+		address: '',
+		email: '',
+		phone: '',
+	};
+	constructor(private events: EventEmitter) {}
 
-  setStep1({ payment, address }: IOrderFormStep1) {
-    this.data.payment = payment as PaymentType;
-    this.data.address = address;
-    this.events.emit('order:step1', this.getStep1());
-  }
+	setStep1({ payment, address }: IOrderFormStep1) {
+		this.data.payment = payment as PaymentType;
+		this.data.address = address;
+		this.events.emit('order:validated', {
+			valid: this.validateOrder(),
+		});
+	}
 
-  setStep2({ email, phone }: IOrderFormStep2) {
-    this.data.email = email;
-    this.data.phone = phone;
-    this.events.emit('order:step2', this.getStep2());
-  }
+	setStep2({ email, phone }: IOrderFormStep2) {
+		this.data.email = email;
+		this.data.phone = phone;
+		this.events.emit('contacts:validated', {
+			valid: this.validateContacts(),
+		});
+	}
 
-  setItems(items: string[]) {
-    this.data.items = items;
-  }
+	getOrderData() {
+		return this.data;
+	}
 
-  getOrder() { return this.data; }
-  getStep1() { return { payment: this.data.payment, address: this.data.address }; }
-  getStep2() { return { email: this.data.email, phone: this.data.phone }; }
-  clear() {
-    this.data = { payment: 'online', address: '', email: '', phone: '', items: [] };
-    this.events.emit('order:cleared');
-  }
+	validateOrder() {
+		return !!this.data.address && !!this.data.payment;
+	}
+
+	validateContacts() {
+		return !!this.data.email && !!this.data.phone;
+	}
+
+	clear() {
+		this.data = { payment: 'online', address: '', email: '', phone: '' };
+		// Consider if an event is needed here
+	}
 }

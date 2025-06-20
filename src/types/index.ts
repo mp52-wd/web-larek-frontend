@@ -42,29 +42,25 @@ export interface IOrderFormStep2 {
   email: string;
   phone: string;
 }
-export interface IOrder {
-  payment: PaymentType;
-  address: string;
-  email: string;
-  phone: string;
+export type IOrderForm = IOrderFormStep1 & IOrderFormStep2;
+
+export interface IOrder extends IOrderForm {
+  total: number;
   items: string[];
 }
 
 // --- События приложения ---
 export type AppEvent =
   | 'products:changed'
-  | 'product:selected'
   | 'card:select'
+  | 'basket:open'
   | 'basket:add'
   | 'basket:remove'
   | 'basket:changed'
   | 'basket:order'
-  | 'order:payment'
-  | 'order:address'
-  | 'order:step1:submit'
-  | 'order:email'
-  | 'order:phone'
-  | 'order:step2:submit'
+  | 'order:changed'
+  | 'order:submit'
+  | 'contacts:submit'
   | 'order:success'
   | 'modal:open'
   | 'modal:close';
@@ -85,33 +81,42 @@ export interface IBasketModel {
   getCount(): number;
 }
 export interface IOrderModel {
-  getOrder(): IOrder;
   setStep1(data: IOrderFormStep1): void;
   setStep2(data: IOrderFormStep2): void;
-  setItems(items: string[]): void;
-  getStep1(): IOrderFormStep1;
-  getStep2(): IOrderFormStep2;
+  getOrderData(): IOrderForm;
+  validateOrder(): boolean;
+  validateContacts(): boolean;
   clear(): void;
 }
 
 // --- Интерфейсы View ---
+export interface IPageView {
+	setCounter(count: number): void;
+	renderGallery(cards: HTMLElement[]): void;
+	showError(message: string): void;
+}
+
 export interface IProductListView {
-  render(products: IProductApi[], inBasket: (id: string) => boolean): void;
+  setItems(elements: HTMLElement[]): void;
 }
 export interface IProductCardView {
-  render(product: IProductApi, inBasket: boolean): void;
+  render(product: IProductView): HTMLElement;
 }
 export interface IBasketView {
-  render(basket: IBasket): void;
+  render(basket: IBasket): HTMLElement;
 }
-export interface IOrderFormView {
-  renderStep1(data: IOrderFormStep1): void;
-  renderStep2(data: IOrderFormStep2): void;
-  showError(message: string): void;
+
+export interface IFormView {
+	setValid(isValid: boolean): void;
+	setErrors(errors: string[]): void;
+	render(data: Partial<IOrderForm>): HTMLElement;
 }
+
+export interface IOrderStep1View extends IFormView {}
+export interface IOrderStep2View extends IFormView {}
+
 export interface ISuccessView {
-  render(total: number): void;
-  getElement(): HTMLElement;
+  render(total: number): HTMLElement;
 }
 export interface IModalView {
   open(content: HTMLElement): void;

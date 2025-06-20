@@ -1,21 +1,27 @@
 import { EventEmitter } from '../base/events';
 
 export class SuccessView {
-  constructor(
-    private template: HTMLTemplateElement,
-    private events: EventEmitter
-  ) {}
+	protected element: HTMLElement;
+	protected totalElement: HTMLElement;
+	protected closeButton: HTMLButtonElement;
 
-  render(total: number) {
-    const el = this.template.content.firstElementChild!.cloneNode(true) as HTMLElement;
-    el.querySelector('.order-success__total')!.textContent = total.toString();
-    el.querySelector('.order-success__close')?.addEventListener('click', () => {
-      this.events.emit('modal:close');
-    });
-    this.events.emit('modal:open', el);
-  }
+	constructor(
+		template: HTMLTemplateElement,
+		protected events: EventEmitter
+	) {
+		this.element = template.content
+			.querySelector('.order-success')
+			.cloneNode(true) as HTMLElement;
+		this.totalElement = this.element.querySelector('.order-success__total');
+		this.closeButton = this.element.querySelector('.order-success__close');
 
-  getElement() {
-    return this.template.content.firstElementChild as HTMLElement;
-  }
+		this.closeButton.addEventListener('click', () => {
+			this.events.emit('order:success');
+		});
+	}
+
+	render(total: number): HTMLElement {
+		this.totalElement.textContent = String(total);
+		return this.element;
+	}
 }
