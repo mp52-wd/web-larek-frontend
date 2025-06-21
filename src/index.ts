@@ -140,57 +140,84 @@ events.on('basket:changed', (basket: { items: { id: string }[] }) => {
 // Оформление заказа
 events.on('basket:order', () => {
 	modalView.close();
-	modalView.open(orderStep1View.render({ payment: 'online', address: '' }));
+	modalView.open(orderStep1View.render({ payment: '', address: '' }));
+	orderStep1View.setValid(false);
+	orderStep1View.setErrors('');
 });
 
-events.on('order:changed', (data: { field: keyof IOrderForm; value: string }) => {
-	orderModel.setStep1({
-		...orderModel.getOrderData(),
-		[data.field]: data.value,
-	});
-});
+events.on(
+	'order:changed',
+	(data: { field: keyof IOrderForm; value: string }) => {
+		orderModel.setOrderField(data.field, data.value);
+	}
+);
 
-events.on('order:validated', (data: { valid: boolean }) => {
-	orderStep1View.setValid(data.valid);
-});
+events.on(
+	'order:errors',
+	(errors: Partial<Record<keyof IOrderForm, string>>) => {
+		const hasErrors = Object.keys(errors).length > 0;
+		orderStep1View.setValid(!hasErrors);
+		orderStep1View.setErrors(Object.values(errors).join('; '));
+	}
+);
 
 events.on('order:submit', () => {
-	modalView.close();
-	modalView.open(orderStep2View.render());
+	if (orderModel.validateOrder()) {
+		modalView.close();
+		modalView.open(orderStep2View.render({ email: '', phone: '' }));
+		orderStep2View.setValid(false);
+		orderStep2View.setErrors('');
+	}
 });
 
-events.on('contacts:changed', (data: { field: keyof IOrderForm; value: string }) => {
-	orderModel.setStep2({
-		...orderModel.getOrderData(),
-		[data.field]: data.value,
-	});
-});
+events.on(
+	'contacts:changed',
+	(data: { field: keyof IOrderForm; value: string }) => {
+		orderModel.setOrderField(data.field, data.value);
+	}
+);
 
 events.on('contacts:validated', (data: { valid: boolean }) => {
 	orderStep2View.setValid(data.valid);
 });
 
-events.on('contacts:submit', () => {
-	const orderData = orderModel.getOrderData();
-	const basket = basketModel.getBasket();
-	const order: IOrder = {
-		...orderData,
-		total: basket.total,
-		items: basket.items.map((item) => item.id),
-	};
+events.on(
+	'contacts:errors',
+	(errors: Partial<Record<keyof IOrderForm, string>>) => {
+		const hasErrors = Object.keys(errors).length > 0;
+		orderStep2View.setValid(!hasErrors);
+		orderStep2View.setErrors(Object.values(errors).join('; '));
+	}
+);
 
-	api
-		.post('/order', order)
-		.then((res: { id: string; total: number }) => {
-			modalView.close();
-			modalView.open(successView.render(res.total));
-			basketModel.clear();
-			orderModel.clear();
-		})
-		.catch((err) => {
-			console.error(err);
-			orderStep2View.setErrors('Ошибка отправки заказа');
-		});
+events.on('contacts:submit', () => {
+	if (orderModel.validateContacts()) {
+		const orderData = orderModel.getOrderData();
+		const basket = basketModel.getBasket();
+		const order: IOrder = {
+			...orderData,
+			total: basket.total,
+			items: basket.items
+				.filter((item) => item.price !== null)
+				.map((item) => item.id),
+		};
+
+		api
+			.post('/order', order)
+			.then((res: { id: string; total: number }) => {
+				modalView.close();
+				modalView.open(successView.render(res.total));
+				basketModel.clear();
+				orderModel.clear();
+			})
+			.catch((err) => {
+				console.error(err);
+				const errorMessages = err.data?.errors
+					? Object.values(err.data.errors).join('; ')
+					: 'Ошибка отправки заказа';
+				orderStep2View.setErrors(errorMessages);
+			});
+	}
 });
 
 events.on('order:success', () => {
